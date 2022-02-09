@@ -94,15 +94,11 @@ class CurrentFastPage extends StatefulWidget {
 
 class CurrentFastPageState extends State<CurrentFastPage> {
   DateTime? start;
-  Duration fastDuration = Duration(seconds: 16);
+  Duration fastDuration = Duration(hours: 16);
   Timer? tickTimer;
   Duration elapsed = Duration();
   double elapsedPercent = 0;
   Duration remaining = Duration();
-  int selectedTabIndex = 0;
-
-  void onTabTap(int index) {
-  }
 
   @override
   void initState() {
@@ -155,6 +151,95 @@ class CurrentFastPageState extends State<CurrentFastPage> {
     }
   }
 
+  String changeDurationButtonLabel() {
+    int hours = fastDuration.inHours;
+    return '${hours}h';
+  }
+
+  Widget fastingDurationCard(Duration cardDuration) {
+    int hoursFasting = cardDuration.inHours;
+    int hoursEating = 24 - hoursFasting;
+
+    final TextStyle? ratioStyle = Theme.of(context).textTheme.headline5;
+
+    Color color = Colors.green;
+    if (hoursFasting >= 16) color = Colors.amber;
+    if (hoursFasting >= 20) color = Colors.orange;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          fastDuration = Duration(hours: cardDuration.inHours) ;
+        });
+        Navigator.pop(context);
+      },
+      child: Card(
+        color: color,
+        child: Container(
+          margin: EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Text("${hoursFasting}:${hoursEating}", style: ratioStyle),
+                  Spacer(),
+                  if (fastDuration.compareTo(cardDuration) == 0) Icon(Icons.check),
+                ],
+              ),
+              Text("Fast for ${hoursFasting} hours, then eat for ${hoursEating} hours."),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void changeFastDuration(BuildContext context) {
+    final TextStyle? titleStyle = Theme.of(context).textTheme.headline4;
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          margin: EdgeInsets.all(30),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('Fasting times', style: titleStyle),
+              SizedBox(height: 5),
+              const Text('Choose your fasting duration'),
+              SizedBox(height: 10),
+              Expanded(child: GridView.count(
+                childAspectRatio: 1.9,
+                crossAxisCount: 2,
+                children: <Widget>[
+                  // Easy
+                  fastingDurationCard(Duration(hours: 12)),
+                  fastingDurationCard(Duration(hours: 13)),
+                  fastingDurationCard(Duration(hours: 14)),
+                  fastingDurationCard(Duration(hours: 15)),
+                  // Medium
+                  fastingDurationCard(Duration(hours: 16)),
+                  fastingDurationCard(Duration(hours: 17)),
+                  fastingDurationCard(Duration(hours: 18)),
+                  fastingDurationCard(Duration(hours: 19)),
+                  // Hard
+                  fastingDurationCard(Duration(hours: 20)),
+                  fastingDurationCard(Duration(hours: 21)),
+                  fastingDurationCard(Duration(hours: 22)),
+                  fastingDurationCard(Duration(hours: 23)),
+                ],
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ButtonStyle toggleFastButtonStyle = ElevatedButton.styleFrom(
@@ -171,6 +256,7 @@ class CurrentFastPageState extends State<CurrentFastPage> {
           children: <Widget>[
             SizedBox(height: 100),
             Stack(
+              clipBehavior: Clip.none,
               alignment: AlignmentDirectional.center,
               children: <Widget>[
                 new CircularPercentIndicator(
@@ -207,6 +293,20 @@ class CurrentFastPageState extends State<CurrentFastPage> {
                   circularStrokeCap: CircularStrokeCap.round,
                   progressColor: (elapsedPercent >= 1) ? Colors.green : Colors.orange,
                   backgroundColor: Colors.transparent,
+                ),
+                Positioned(
+                  top: -10,
+                  right: -30,
+                  child: TextButton(
+                    onPressed: () => changeFastDuration(context),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        Text(changeDurationButtonLabel(), style: TextStyle(fontSize: 20)),
+                        Icon(Icons.mode_edit, size: 20, color: Theme.of(context).primaryColor),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
