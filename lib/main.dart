@@ -111,7 +111,7 @@ class GoalTime extends StatelessWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  DateTime start = DateTime.now(); 
+  DateTime? start;
   Duration fastDuration = Duration(hours: 16);
   Timer? tickTimer;
   Duration elapsed = Duration();
@@ -122,12 +122,14 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     tickTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        DateTime now = DateTime.now();
-        elapsed = now.difference(start);
-        remaining = fastDuration - elapsed;
-        elapsedPercent = elapsed.inSeconds / fastDuration.inSeconds;
-      });
+      if (start != null) {
+        setState(() {
+            DateTime now = DateTime.now();
+            elapsed = now.difference(start!);
+            remaining = fastDuration - elapsed;
+            elapsedPercent = elapsed.inSeconds / fastDuration.inSeconds;
+        });
+      }
     });
   }
 
@@ -148,9 +150,31 @@ class _MyHomePageState extends State<MyHomePage> {
     return 'Remaining ($percent%)';
   }
 
+  void toggleFast() {
+    bool wasFasting = start != null;
+    if (wasFasting) {
+      // TODO: Save finished fast
+      setState(() {
+        start = null;
+        elapsed = Duration.zero;
+        remaining = Duration.zero;
+        remaining = Duration.zero;
+      });
+    } else {
+      // Start fast
+      setState(() {
+        start = DateTime.now();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle buttonStyle = ElevatedButton.styleFrom(textStyle: const TextStyle(fontSize: 20));
+    final ButtonStyle toggleFastButtonStyle = ElevatedButton.styleFrom(
+      textStyle: const TextStyle(fontSize: 20),
+      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 30),
+      elevation: 5,
+    );
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -165,40 +189,45 @@ class _MyHomePageState extends State<MyHomePage> {
               alignment: AlignmentDirectional.center,
               children: <Widget>[
                 new CircularPercentIndicator(
-                    radius: 290.0,
-                    lineWidth: 5.0,
-                    animation: false,
-                    percent: 1,
-                    progressColor: Colors.orange,
-                  ),
+                  radius: 290.0,
+                  lineWidth: 5.0,
+                  animation: false,
+                  percent: 1,
+                  progressColor: Colors.orange,
+                ),
                 new CircularPercentIndicator(
-                    radius: 320.0,
-                    lineWidth: 35.0,
-                    animation: false,
-                    percent: (elapsedPercent <= 1) ? elapsedPercent : 1,
-                    center: 
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Text(elapsedTimeLabel(), style: Theme.of(context).textTheme.subtitle1),
-                          Text(
-                            elapsed.toString().split('.').first,
-                            style: Theme.of(context).textTheme.headline3,
-                          ),
-                          Text(remainingTimeLabel(), style: Theme.of(context).textTheme.subtitle2),
-                          Text(
-                            (elapsedPercent >= 1) ? '' : remaining.toString().split('.').first,
-                            style: Theme.of(context).textTheme.subtitle2,
-                          ),
-                        ],
-                      ),
-                    circularStrokeCap: CircularStrokeCap.round,
-                    progressColor: (elapsedPercent >= 1) ? Colors.green : Colors.orange,
-                    backgroundColor: Colors.transparent,
-                  ),
-                ],
-              ),
+                  radius: 320.0,
+                  lineWidth: 35.0,
+                  animation: false,
+                  percent: (elapsedPercent <= 1) ? elapsedPercent : 1,
+                  center: 
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        Text(elapsedTimeLabel(), style: Theme.of(context).textTheme.subtitle1),
+                        Text(
+                          elapsed.toString().split('.').first,
+                          style: Theme.of(context).textTheme.headline3,
+                        ),
+                        Text(remainingTimeLabel(), style: Theme.of(context).textTheme.subtitle2),
+                        Text(
+                          (elapsedPercent >= 1) ? '' : remaining.toString().split('.').first,
+                          style: Theme.of(context).textTheme.subtitle2,
+                        ),
+                      ],
+                    ),
+                  circularStrokeCap: CircularStrokeCap.round,
+                  progressColor: (elapsedPercent >= 1) ? Colors.green : Colors.orange,
+                  backgroundColor: Colors.transparent,
+                ),
+              ],
+            ),
+            ElevatedButton(
+              style: toggleFastButtonStyle,
+              onPressed: toggleFast,
+              child: (start == null) ?  const Text('Start fast') : const Text('End fast'),
+            ),
             Container(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
