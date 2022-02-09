@@ -43,7 +43,7 @@ class StartTime extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           Text('Start', style: startLabelStyle),
-          Text(DateFormat("EEEE, H:Hm").format(startDate ?? DateTime(0)), style: dateLabelStyle),
+          Text(DateFormat("EEEE, kk:mm").format(startDate ?? DateTime(0)), style: dateLabelStyle),
           Row(
             children: <Widget>[
               Text('Edit ', style: editLabelStyle),
@@ -60,11 +60,11 @@ class GoalTime extends StatelessWidget {
   const GoalTime({
     Key? key,
     this.startDate,
-    this.duration,
+    this.duration = const Duration(),
   }) : super(key: key);
 
   final DateTime? startDate;
-  final Duration? duration;
+  final Duration duration;
 
   @override
   Widget build(BuildContext context) {
@@ -74,12 +74,16 @@ class GoalTime extends StatelessWidget {
     );
     final TextStyle? startLabelStyle = Theme.of(context).textTheme.subtitle2;
     final TextStyle? dateLabelStyle = Theme.of(context).textTheme.subtitle1;
+    DateTime goalTime = DateTime(0);
+    if (startDate != null) {
+      goalTime = startDate!.add(duration);
+    }
     return Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Text('Goal', style: startLabelStyle),
-            Text(DateFormat("EEEE, H:Hm").format(startDate ?? DateTime(0)), style: dateLabelStyle),
+            Text(DateFormat("EEEE, kk:mm").format(goalTime), style: dateLabelStyle),
           ],
         );
   }
@@ -113,6 +117,12 @@ class CurrentFastPageState extends State<CurrentFastPage> {
         });
       }
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    tickTimer?.cancel();
   }
 
   void setStartDate(DateTime newStartDate) {
