@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,11 +43,18 @@ class StartTime extends StatelessWidget {
   final DateTime? startDate;
   final ValueSetter<DateTime>? onStartDateChange;
 
-  void selectStartDate(BuildContext context) async {
-    var selectedDate = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(1900), lastDate: DateTime(2100)) ?? DateTime.now();
-    if (onStartDateChange != null) {
-      onStartDateChange!(selectedDate);
-    }
+  void selectStartDate(BuildContext context) {
+    DatePicker.showDateTimePicker(
+      context,
+      currentTime: startDate,
+      showTitleActions: true,
+      maxTime: DateTime.now(),
+      onConfirm: (date) {
+        if (onStartDateChange != null) {
+          onStartDateChange!(date);
+        }
+      },
+    );
   }
 
   @override
@@ -104,9 +112,9 @@ class GoalTime extends StatelessWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   DateTime start = DateTime.now(); 
-  Duration fastDuration = Duration(minutes: 16); // TODO: Change back to 16h
+  Duration fastDuration = Duration(hours: 16);
   Timer? tickTimer;
-  Duration elapsed = Duration(hours: 5);
+  Duration elapsed = Duration();
   double elapsedPercent = 0;
   Duration remaining = Duration();
 
@@ -136,6 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   String remainingTimeLabel() {
     int percent = 100 - (elapsedPercent * 100).round();
+    if (percent < 0) return '';
     return 'Remaining ($percent%)';
   }
 
@@ -152,31 +161,43 @@ class _MyHomePageState extends State<MyHomePage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             SizedBox(height: 50),
-            new CircularPercentIndicator(
-                radius: 320.0,
-                lineWidth: 35.0,
-                animation: false,
-                percent: elapsedPercent,
-                center: 
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      Text(elapsedTimeLabel(), style: Theme.of(context).textTheme.subtitle1),
-                      Text(
-                        elapsed.toString().split('.').first,
-                        style: Theme.of(context).textTheme.headline3,
-                      ),
-                      Text(remainingTimeLabel(), style: Theme.of(context).textTheme.subtitle2),
-                      Text(
-                        remaining.toString().split('.').first,
-                        style: Theme.of(context).textTheme.subtitle2,
-                      ),
-                    ],
+            Stack(
+              alignment: AlignmentDirectional.center,
+              children: <Widget>[
+                new CircularPercentIndicator(
+                    radius: 290.0,
+                    lineWidth: 5.0,
+                    animation: false,
+                    percent: 1,
+                    progressColor: Colors.orange,
                   ),
-                circularStrokeCap: CircularStrokeCap.round,
-                progressColor: Colors.orange,
-                backgroundColor: Colors.black12,
+                new CircularPercentIndicator(
+                    radius: 320.0,
+                    lineWidth: 35.0,
+                    animation: false,
+                    percent: (elapsedPercent <= 1) ? elapsedPercent : 1,
+                    center: 
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Text(elapsedTimeLabel(), style: Theme.of(context).textTheme.subtitle1),
+                          Text(
+                            elapsed.toString().split('.').first,
+                            style: Theme.of(context).textTheme.headline3,
+                          ),
+                          Text(remainingTimeLabel(), style: Theme.of(context).textTheme.subtitle2),
+                          Text(
+                            (elapsedPercent >= 1) ? '' : remaining.toString().split('.').first,
+                            style: Theme.of(context).textTheme.subtitle2,
+                          ),
+                        ],
+                      ),
+                    circularStrokeCap: CircularStrokeCap.round,
+                    progressColor: (elapsedPercent >= 1) ? Colors.green : Colors.orange,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ],
               ),
             Container(
               child: Row(
