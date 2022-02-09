@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:hive/hive.dart';
 
 class StartTime extends StatelessWidget {
   const StartTime({
@@ -97,27 +98,41 @@ class CurrentFastPage extends StatefulWidget {
 }
 
 class CurrentFastPageState extends State<CurrentFastPage> {
-  DateTime? start;
-  Duration fastDuration = Duration(hours: 16);
   Timer? tickTimer;
   Duration elapsed = Duration();
   double elapsedPercent = 0;
   Duration remaining = Duration();
+  late final Box fastsBox;
+  late final Box currentFastBox;
+
+  void tickUpdate() {
+    if (currentFastBox.get('start') != null) {
+      setState(() {
+        DateTime now = DateTime.now();
+        elapsed = now.difference(currentFastBox.get('start')!);
+        remaining = currentFastBox.get('fastDuration') - elapsed;
+        elapsedPercent = elapsed.inSeconds / currentFastBox.get('fastDuration').inSeconds;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    fastsBox = Hive.box('fasts');
+    currentFastBox = Hive.box('currentFast');
+    
+    // Set inital state for non-nullable variables on first start
+    setState(() {
+      if (currentFastBox.get('fastDuration') == null) currentFastBox.put('fastDuration', Duration(hours: 16));
+    });
+
+    tickUpdate();
     tickTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (start != null) {
-        setState(() {
-            DateTime now = DateTime.now();
-            elapsed = now.difference(start!);
-            remaining = fastDuration - elapsed;
-            elapsedPercent = elapsed.inSeconds / fastDuration.inSeconds;
-        });
-      }
+      tickUpdate();
     });
   }
+  
 
   @override
   void dispose() {
@@ -127,7 +142,7 @@ class CurrentFastPageState extends State<CurrentFastPage> {
 
   void setStartDate(DateTime newStartDate) {
     setState(() {
-      start = newStartDate;
+      currentFastBox.put('start', newStartDate);
     });
   }
 
@@ -143,11 +158,11 @@ class CurrentFastPageState extends State<CurrentFastPage> {
   }
 
   void toggleFast() {
-    bool wasFasting = start != null;
+    bool wasFasting = currentFastBox.get('start') != null;
     if (wasFasting) {
       // TODO: Save finished fast
       setState(() {
-        start = null;
+        currentFastBox.put('start', null);
         elapsed = Duration.zero;
         elapsedPercent = 0;
         remaining = Duration.zero;
@@ -155,14 +170,14 @@ class CurrentFastPageState extends State<CurrentFastPage> {
       });
     } else {
       // Start fast
-      setState(() {
-        start = DateTime.now();
+      setState(() { // TODO: Remove SetState?
+        currentFastBox.put('start', DateTime.now());
       });
     }
   }
 
   String changeDurationButtonLabel() {
-    int hours = fastDuration.inHours;
+    int hours = currentFastBox.get('fastDuration').inHours;
     return '${hours}h';
   }
 
@@ -179,7 +194,7 @@ class CurrentFastPageState extends State<CurrentFastPage> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          fastDuration = Duration(hours: cardDuration.inHours) ;
+          currentFastBox.put('fastDuration', cardDuration);
         });
         Navigator.pop(context);
       },
@@ -194,7 +209,7 @@ class CurrentFastPageState extends State<CurrentFastPage> {
                 children: <Widget>[
                   Text("${hoursFasting}:${hoursEating}", style: ratioStyle),
                   Spacer(),
-                  if (fastDuration.compareTo(cardDuration) == 0) Icon(Icons.check),
+                  if (currentFastBox.get('fastDuration').compareTo(cardDuration) == 0) Icon(Icons.check),
                 ],
               ),
               Text("Fast for ${hoursFasting} hours, then eat for ${hoursEating} hours."),
@@ -324,15 +339,15 @@ class CurrentFastPageState extends State<CurrentFastPage> {
             ElevatedButton(
               style: toggleFastButtonStyle,
               onPressed: toggleFast,
-              child: (start == null) ?  const Text('Start fast') : const Text('End fast'),
+              child: (currentFastBox.get('start') == null) ?  const Text('Start fast') : const Text('End fast'),
             ),
             Container(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  StartTime(startDate: start, onStartDateChange: setStartDate),
+                  StartTime(startDate: currentFastBox.get('start'), onStartDateChange: setStartDate),
                   Spacer(),
-                  GoalTime(startDate: start, duration: fastDuration),
+                  GoalTime(startDate: currentFastBox.get('start'), duration: currentFastBox.get('fastDuration')),
                 ],
               ),
               margin: EdgeInsets.all(30),

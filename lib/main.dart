@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
+import './models/fast.dart';
 import './currentfast.dart';
+import './duration_adapter.dart';
 
-void main() {
+void main() async {
+  await Hive.initFlutter();
+  Hive.registerAdapter(DurationAdapter());
+  Hive.registerAdapter(FastAdapter());
+  await Hive.openBox('fasts');
+  await Hive.openBox('currentFast');
   runApp(const MyApp());
+  // TODO: Close hive?
 }
 
 class MyApp extends StatelessWidget {
