@@ -112,7 +112,7 @@ class GoalTime extends StatelessWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   DateTime? start;
-  Duration fastDuration = Duration(hours: 16);
+  Duration fastDuration = Duration(seconds: 16);
   Timer? tickTimer;
   Duration elapsed = Duration();
   double elapsedPercent = 0;
@@ -157,6 +157,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         start = null;
         elapsed = Duration.zero;
+        elapsedPercent = 0;
         remaining = Duration.zero;
         remaining = Duration.zero;
       });
@@ -175,6 +176,7 @@ class _MyHomePageState extends State<MyHomePage> {
       padding: EdgeInsets.symmetric(vertical: 10, horizontal: 30),
       elevation: 5,
     );
+    final double maxProgress = 0.95;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -189,17 +191,19 @@ class _MyHomePageState extends State<MyHomePage> {
               alignment: AlignmentDirectional.center,
               children: <Widget>[
                 new CircularPercentIndicator(
-                  radius: 290.0,
-                  lineWidth: 5.0,
+                  radius: 320.0,
+                  lineWidth: 35.0,
                   animation: false,
-                  percent: 1,
-                  progressColor: Colors.orange,
+                  percent: maxProgress,
+                  circularStrokeCap: CircularStrokeCap.round,
+                  progressColor: Colors.black12,
+                  backgroundColor: Colors.transparent,
                 ),
                 new CircularPercentIndicator(
                   radius: 320.0,
                   lineWidth: 35.0,
                   animation: false,
-                  percent: (elapsedPercent <= 1) ? elapsedPercent : 1,
+                  percent: (elapsedPercent <= 1) ? (elapsedPercent * maxProgress) : maxProgress,
                   center: 
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -223,6 +227,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ],
             ),
+            SizedBox(height: 30),
             ElevatedButton(
               style: toggleFastButtonStyle,
               onPressed: toggleFast,
