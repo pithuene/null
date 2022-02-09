@@ -30,25 +30,29 @@ class StartTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle changeButtonStyle = ElevatedButton.styleFrom(
-      textStyle: const TextStyle(fontSize: 12),
-      padding: EdgeInsets.all(10),
+    const double fontSize = 14;
+    final TextStyle editLabelStyle = TextStyle(
+      color: Theme.of(context).primaryColor,
     );
     final TextStyle? startLabelStyle = Theme.of(context).textTheme.subtitle2;
     final TextStyle? dateLabelStyle = Theme.of(context).textTheme.subtitle1;
-    return Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Text('Start', style: startLabelStyle),
-            Text(DateFormat("EEEE, H:Hm").format(startDate ?? DateTime(0)), style: dateLabelStyle),
-            ElevatedButton(
-              style: changeButtonStyle,
-              onPressed: () => selectStartDate(context),
-              child: const Text('Edit'),
-            ),
-          ],
-        );
+    return new GestureDetector(
+      onTap: () => selectStartDate(context),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Text('Start', style: startLabelStyle),
+          Text(DateFormat("EEEE, H:Hm").format(startDate ?? DateTime(0)), style: dateLabelStyle),
+          Row(
+            children: <Widget>[
+              Text('Edit ', style: editLabelStyle),
+              Icon(Icons.mode_edit, size: fontSize, color: Theme.of(context).primaryColor),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
