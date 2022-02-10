@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import './models/fast.dart';
 import './currentfast.dart';
+import './fastlist.dart';
 import './duration_adapter.dart';
 
 void main() async {
@@ -43,7 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
   static const List<Widget> pages = <Widget>[
     CurrentFastPage(),
     Text('Page 2'),
-    Text('Page 3'),
+    FastListPage(),
   ];
   int selectedTabIndex = 0;
 

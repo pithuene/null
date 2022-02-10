@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:hive/hive.dart';
+import './models/fast.dart';
 
 class StartTime extends StatelessWidget {
   const StartTime({
@@ -160,7 +161,13 @@ class CurrentFastPageState extends State<CurrentFastPage> {
   void toggleFast() {
     bool wasFasting = currentFastBox.get('start') != null;
     if (wasFasting) {
-      // TODO: Save finished fast
+      Fast finishedFast = Fast(
+        start: currentFastBox.get('start'),
+        end: DateTime.now(),
+        targetDuration: currentFastBox.get('fastDuration'),
+      );
+      // TODO: Add confirmation before ending and saving the fast
+      fastsBox.add(finishedFast);
       setState(() {
         currentFastBox.put('start', null);
         elapsed = Duration.zero;
@@ -335,12 +342,6 @@ class CurrentFastPageState extends State<CurrentFastPage> {
                 ),
               ],
             ),
-            SizedBox(height: 30),
-            ElevatedButton(
-              style: toggleFastButtonStyle,
-              onPressed: toggleFast,
-              child: (currentFastBox.get('start') == null) ?  const Text('Start fast') : const Text('End fast'),
-            ),
             Container(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,6 +352,11 @@ class CurrentFastPageState extends State<CurrentFastPage> {
                 ],
               ),
               margin: EdgeInsets.all(30),
+            ),
+            ElevatedButton(
+              style: toggleFastButtonStyle,
+              onPressed: toggleFast,
+              child: (currentFastBox.get('start') == null) ?  const Text('Start fast') : const Text('End fast'),
             ),
           ],
         ),
