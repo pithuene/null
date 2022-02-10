@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tuple/tuple.dart';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -43,20 +44,28 @@ class FastListPageState extends State<FastListPage> {
     }
   }
 
-  Widget getFastListEntry(Fast fast) {
-    final Duration duration = fast.end.difference(fast.start);
+  void deleteFastEntry(Tuple2<int, Fast> fast) {
+    setState(() {
+      fastsBox.delete(fast.item1);
+    });
+  }
+
+  Widget getFastListEntry(Tuple2<int, Fast> fast) {
+    final Duration duration = fast.item2.end.difference(fast.item2.start);
     return Card(
       child: Container(
         padding: EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(formatWeekdayDuration(fast), style: Theme.of(context).textTheme.headline5),
+            Text(formatWeekdayDuration(fast.item2), style: Theme.of(context).textTheme.headline5),
             Row(
               children: <Widget>[
                 Text(formatDurationHHmm(duration)),
                 const Text(" / "),
-                Text(formatDurationHH(fast.targetDuration)),
+                Text(formatDurationHH(fast.item2.targetDuration)),
+                Spacer(),
+                TextButton(onPressed: () => deleteFastEntry(fast), child: const Text("Delete"))
               ]
             ),
           ],
@@ -67,8 +76,12 @@ class FastListPageState extends State<FastListPage> {
 
   @override
   Widget build(BuildContext context) {
-    List<dynamic> fasts = fastsBox.values.toList();
-    fasts.sort((a, b) => b.start.compareTo(a.start));
+    List<Tuple2<int, Fast>> fasts = [];
+    fastsBox.keys.forEach((key) {
+      fasts.add(Tuple2<int, Fast>(key, fastsBox.get(key)));
+    });
+    // TODO: This will not scale
+    fasts.sort((a, b) => b.item2.start.compareTo(a.item2.start));
     return Container(
       padding: EdgeInsets.all(20),
       child: Column(
@@ -79,8 +92,7 @@ class FastListPageState extends State<FastListPage> {
             child: new ListView.builder(
               itemCount: fasts.length,
               itemBuilder: (context, index) {
-                Fast fast = fasts[index];
-                return getFastListEntry(fast);
+                return getFastListEntry(fasts[index]);
               },
             ),
           ),
