@@ -5,6 +5,7 @@ import 'package:percent_indicator/percent_indicator.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:hive/hive.dart';
 import './models/fast.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class StartTime extends StatelessWidget {
   const StartTime({
@@ -88,6 +89,105 @@ class GoalTime extends StatelessWidget {
             Text(DateFormat("EEEE, kk:mm").format(goalTime), style: dateLabelStyle),
           ],
         );
+  }
+}
+
+class RecentFastsChart extends StatelessWidget {
+  const RecentFastsChart({
+    Key? key,
+    required this.startDate,
+    required this.targetDuration,
+    required this.fastsBox
+  }) : super(key: key);
+
+  final DateTime? startDate;
+  final Duration targetDuration;
+  final Box fastsBox;
+
+  final double barWidth = 20;
+  final double targetHours = 20;
+
+  BarChartGroupData createBar(int x, double y, double width, Color color) {
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          y: (y <= targetHours) ? y : targetHours,
+          colors: [color],
+          width: width,
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            y: targetHours,
+            colors: [Colors.black12],
+          )
+        ),
+      ],
+    );
+  }
+
+  BarChartData data(List<Fast> recentFasts) {
+    List<BarChartGroupData> barGroups = [];
+    for(int id = 0; id < recentFasts.length; id++) {
+      var fast = recentFasts[id];
+      final Duration duration = fast.end.difference(fast.start);
+      final int hours = duration.inHours;
+      final bool goalReached = duration.compareTo(targetDuration) >= 0;
+      barGroups.add(createBar(id, hours.toDouble(), barWidth, goalReached ? Colors.green : Colors.orange));
+    };
+
+
+    return BarChartData(
+      barGroups: barGroups,
+      alignment: BarChartAlignment.center,
+      groupsSpace: barWidth,
+      barTouchData: BarTouchData(enabled: false),
+      gridData: FlGridData(show: false),
+      borderData: FlBorderData(show: false),
+      titlesData: FlTitlesData(
+        show: true,
+        rightTitles: SideTitles(showTitles: false),
+        topTitles: SideTitles(
+          showTitles: true,
+          getTextStyles: (context, value) => const TextStyle(
+            color: Colors.black, fontWeight: FontWeight.normal, fontSize: 14),
+          getTitles: (double value) {
+            Fast fast = recentFasts[value.toInt()];
+            final int hours = fast.end.difference(fast.start).inHours;
+            return '${hours}h';
+          }
+        ),
+        bottomTitles: SideTitles(
+          showTitles: true,
+          getTextStyles: (context, value) => const TextStyle(
+              color: Colors.black, fontWeight: FontWeight.normal, fontSize: 14),
+          margin: 10,
+          getTitles: (double value) {
+            Fast fast = recentFasts[value.toInt()];
+            return DateFormat("E").format(fast.start);
+          },
+        ),
+        leftTitles: SideTitles(
+          showTitles: false,
+        ),
+      ),
+      maxY: 20,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    DateTime now = DateTime.now();
+    List<Fast> recentFasts = fastsBox.values
+      .map((fast) => fast as Fast)
+      .where((fast) => now.difference(fast.end).inDays <= 7)
+      .toList();
+    
+    recentFasts.sort((a, b) => a.start.compareTo(b.start));
+    if (recentFasts.length > 7) {
+      recentFasts = recentFasts.sublist(recentFasts.length - 7);
+    }
+
+    return Expanded(child: BarChart(data(recentFasts)));
   }
 }
 
@@ -177,7 +277,7 @@ class CurrentFastPageState extends State<CurrentFastPage> {
       });
     } else {
       // Start fast
-      setState(() { // TODO: Remove SetState?
+      setState(() {
         currentFastBox.put('start', DateTime.now());
       });
     }
@@ -358,6 +458,13 @@ class CurrentFastPageState extends State<CurrentFastPage> {
               onPressed: toggleFast,
               child: (currentFastBox.get('start') == null) ?  const Text('Start fast') : const Text('End fast'),
             ),
+            SizedBox(height: 20),
+            RecentFastsChart(
+              startDate: currentFastBox.get('start'),
+              targetDuration: currentFastBox.get('fastDuration'),
+              fastsBox: fastsBox
+            ),
+            SizedBox(height: 20),
           ],
         ),
       );

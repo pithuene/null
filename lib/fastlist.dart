@@ -68,6 +68,7 @@ class FastListPageState extends State<FastListPage> {
   @override
   Widget build(BuildContext context) {
     List<dynamic> fasts = fastsBox.values.toList();
+    fasts.sort((a, b) => b.start.compareTo(a.start));
     return Container(
       padding: EdgeInsets.all(20),
       child: Column(
