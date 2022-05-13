@@ -1,24 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:isar/isar.dart';
+import 'package:path_provider/path_provider.dart';
 
 import './models/fast.dart';
 import './currentfast.dart';
 import './fastlist.dart';
-import './duration_adapter.dart';
 
 void main() async {
-  await Hive.initFlutter();
-  Hive.registerAdapter(DurationAdapter());
-  Hive.registerAdapter(FastAdapter());
-  await Hive.openBox('fasts');
-  await Hive.openBox('currentFast');
-  runApp(const MyApp());
-  // TODO: Close hive?
+  WidgetsFlutterBinding.ensureInitialized();
+  final dir = await getApplicationSupportDirectory();
+  int selectedTabIndex = 0;
+  final isar = await Isar.open(
+    schemas: [FastSchema],
+    directory: dir.path,
+  );
+  runApp(
+    MyApp(
+      isar: isar,
+      selectedTabIndex: selectedTabIndex,
+      setSelectedTabIndex: (int tabIndex) {
+        selectedTabIndex = tabIndex;
+      },
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final Isar isar;
+  final int selectedTabIndex;
+  final Function setSelectedTabIndex;
+
+  const MyApp({
+    Key? key,
+    required this.isar,
+    required this.selectedTabIndex,
+    required this.setSelectedTabIndex,
+  }) : super(key: key);
 
   // This widget is the root of your application.
   @override
@@ -28,34 +45,39 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.orange,
       ),
-      home: const MyHomePage(),
+      home: MyHomePage(
+        isar: isar,
+        selectedTabIndex: selectedTabIndex,
+        setSelectedTabIndex: setSelectedTabIndex
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+class MyHomePage extends StatelessWidget {
+  final Isar isar;
+  final int selectedTabIndex;
+  final Function setSelectedTabIndex;
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  static const List<Widget> pages = <Widget>[
-    CurrentFastPage(),
-    Text('Page 2'),
-    FastListPage(),
-  ];
-  int selectedTabIndex = 0;
+  const MyHomePage({
+    Key? key,
+    required this.isar,
+    required this.selectedTabIndex,
+    required this.setSelectedTabIndex
+  }) : super(key: key);
 
   void onTabTap(int index) {
-    setState(() {
-      selectedTabIndex = index;
-    });
+    setSelectedTabIndex(index);
   }
 
   @override
   Widget build(BuildContext context) {
+    List<Widget> pages = <Widget>[
+      CurrentFastPage(isar: isar),
+      const Text('Page 2'),
+      FastListPage(isar: isar),
+    ];
+
     return Scaffold(
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[

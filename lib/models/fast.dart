@@ -1,18 +1,18 @@
-import 'package:hive/hive.dart';
+import 'package:isar/isar.dart';
 part 'fast.g.dart';
 
-@HiveType(typeId: 1)
+@Collection()
 class Fast {
-  @HiveField(0)
-  final DateTime start;
-  @HiveField(1)
-  final DateTime end;
-  @HiveField(2)
-  final Duration targetDuration;
+  @Id()
+  int? id;
+  DateTime start;
+  DateTime? end;
+  int targetHours;
 
   Fast({
+    this.id,
     required this.start,
-    required this.end,
-    required this.targetDuration,
+    this.end,
+    required this.targetHours,
   });
 }
