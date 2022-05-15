@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -14,40 +15,32 @@ void main() async {
     directory: dir.path,
   );
   runApp(
-    NullApp(isar: isar),
+    ProviderScope(child: NullApp(isar: isar)),
   );
 }
 
-class NullApp extends StatefulWidget {
+final selectedTabIndexProvider = StateProvider<int>((ref) => 0);
+
+class NullApp extends ConsumerWidget {
   final Isar isar;
 
-  NullApp({
+  const NullApp({
     Key? key,
     required this.isar,
   });
 
   @override
-  NullAppState createState() => NullAppState();
-}
-
-class NullAppState extends State<NullApp> {
-  int selectedTabIndex = 0;
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.orange,
       ),
       home: MyHomePage(
-        isar: widget.isar,
-        selectedTabIndex: selectedTabIndex,
+        isar: isar,
+        selectedTabIndex: ref.watch(selectedTabIndexProvider),
         setSelectedTabIndex: (int index) {
-          setState(() {
-            selectedTabIndex = index;
-          });
+          ref.read(selectedTabIndexProvider.notifier).state = index;
         }
       ),
     );
