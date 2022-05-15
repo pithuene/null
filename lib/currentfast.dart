@@ -125,7 +125,7 @@ class RecentFastsChart extends StatelessWidget {
     List<BarChartGroupData> barGroups = [];
     for(int id = 0; id < recentFasts.length; id++) {
       var fast = recentFasts[id];
-      final Duration duration = (fast.end != null) ? fast.end!.difference(fast.start) : const Duration();
+      final Duration duration = (fast.end ?? DateTime.now()).difference(fast.start);
       final int hours = duration.inHours;
       final bool goalReached = duration.compareTo(targetDuration) >= 0;
       barGroups.add(createBar(id, hours.toDouble(), barWidth, goalReached ? Colors.green : Colors.orange));
@@ -147,12 +147,8 @@ class RecentFastsChart extends StatelessWidget {
             color: Colors.black, fontWeight: FontWeight.normal, fontSize: 14),
           getTitles: (double value) {
             Fast fast = recentFasts[value.toInt()];
-            if (fast.end != null) {
-              final int hours = fast.end!.difference(fast.start).inHours;
-              return '${hours}h';
-            } else {
-              return ''; // Fast not ended
-            }
+            final int hours = (fast.end ?? DateTime.now()).difference(fast.start).inHours;
+            return '${hours}h';
           }
         ),
         bottomTitles: SideTitles(
@@ -175,13 +171,7 @@ class RecentFastsChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Fast> recentFasts = isar.fasts.where().sortByStartDesc().limit(7).findAllSync();
-    
-    recentFasts.sort((a, b) => a.start.compareTo(b.start));
-    if (recentFasts.length > 7) {
-      recentFasts = recentFasts.sublist(recentFasts.length - 7);
-    }
-
+    List<Fast> recentFasts = isar.fasts.where().sortByStart().limit(7).findAllSync();
     return Expanded(child: BarChart(data(recentFasts)));
   }
 }
@@ -197,7 +187,6 @@ class CurrentFastPage extends StatefulWidget {
 class CurrentFastPageState extends State<CurrentFastPage> {
   Timer? tickTimer;
   Duration elapsed = const Duration();
-  double elapsedPercent = 0;
   Duration remaining = const Duration();
   Fast? latestFast;
   int targetHours = 16;
@@ -210,6 +199,11 @@ class CurrentFastPageState extends State<CurrentFastPage> {
     }
   }
 
+  double elapsedPercent() {
+    final Duration targetDuration = Duration(hours: targetHours);
+    return elapsed.inSeconds / targetDuration.inSeconds;
+  }
+
   void tickUpdate() {
     if (isCurrentlyFasting()) {
       setState(() {
@@ -217,7 +211,6 @@ class CurrentFastPageState extends State<CurrentFastPage> {
         elapsed = now.difference(latestFast!.start);
         final Duration targetDuration = Duration(hours: targetHours);
         remaining = targetDuration - elapsed;
-        elapsedPercent = elapsed.inSeconds / targetDuration.inSeconds;
       });
     }
   }
@@ -247,7 +240,9 @@ class CurrentFastPageState extends State<CurrentFastPage> {
     widget.isar.writeTxnSync((isar) {
       newFast.id = widget.isar.fasts.putSync(newFast);
     });
-    latestFast = newFast;
+    setState(() {
+      latestFast = newFast;
+    });
   }
 
   void setStartDate(DateTime newStartDate) {
@@ -266,19 +261,22 @@ class CurrentFastPageState extends State<CurrentFastPage> {
   }
 
   String elapsedTimeLabel() {
-    int percent = (elapsedPercent * 100).round();
+    int percent = (elapsedPercent() * 100).round();
     return 'Elapsed time ($percent%)';
   }
 
   String remainingTimeLabel() {
-    int percent = 100 - (elapsedPercent * 100).round();
+    int percent = 100 - (elapsedPercent() * 100).round();
     if (percent < 0) return '';
     return 'Remaining ($percent%)';
   }
 
   void toggleFast() {
     if (isCurrentlyFasting()) {
-      latestFast?.end = DateTime.now();
+      setState(() {
+        latestFast?.end = DateTime.now();
+        elapsed = const Duration();
+      });
       // TODO: Add confirmation before ending and saving the fast
       widget.isar.writeTxn((isar) async {
         widget.isar.fasts.put(latestFast!);
@@ -405,7 +403,7 @@ class CurrentFastPageState extends State<CurrentFastPage> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            const SizedBox(height: 100),
+            const SizedBox(height: 40),
             Stack(
               clipBehavior: Clip.none,
               alignment: AlignmentDirectional.center,
@@ -423,7 +421,7 @@ class CurrentFastPageState extends State<CurrentFastPage> {
                   radius: 320.0,
                   lineWidth: 35.0,
                   animation: false,
-                  percent: (elapsedPercent <= 1) ? (elapsedPercent * maxProgress) : maxProgress,
+                  percent: (elapsedPercent() <= 1) ? (elapsedPercent() * maxProgress) : maxProgress,
                   center: 
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -436,13 +434,13 @@ class CurrentFastPageState extends State<CurrentFastPage> {
                         ),
                         Text(remainingTimeLabel(), style: Theme.of(context).textTheme.subtitle2),
                         Text(
-                          (elapsedPercent >= 1) ? '' : remaining.toString().split('.').first,
+                          (elapsedPercent() >= 1) ? '' : remaining.toString().split('.').first,
                           style: Theme.of(context).textTheme.subtitle2,
                         ),
                       ],
                     ),
                   circularStrokeCap: CircularStrokeCap.round,
-                  progressColor: (elapsedPercent >= 1) ? Colors.green : Colors.orange,
+                  progressColor: (elapsedPercent() >= 1) ? Colors.green : Colors.orange,
                   backgroundColor: Colors.transparent,
                 ),
                 Positioned(
@@ -482,8 +480,8 @@ class CurrentFastPageState extends State<CurrentFastPage> {
               style: toggleFastButtonStyle,
               onPressed: toggleFast,
               child: (isCurrentlyFasting())
-                ? const Text('Start fast')
-                : const Text('End fast'),
+                ? const Text('End fast')
+                : const Text('Start fast'),
             ),
             const SizedBox(height: 20),
             RecentFastsChart(

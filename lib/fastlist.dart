@@ -3,13 +3,15 @@ import 'package:isar/isar.dart';
 import 'package:intl/intl.dart';
 import './models/fast.dart';
 
-class FastListPage extends StatelessWidget {
+class FastListPage extends StatefulWidget {
   final Isar isar;
+  const FastListPage ({Key? key, required this.isar}) : super(key: key);
 
-  const FastListPage({
-    Key? key,
-    required this.isar
-  }) : super(key: key);
+  @override
+  State<FastListPage> createState() => FastListPageState();
+}
+
+class FastListPageState extends State<FastListPage> {
 
   String formatDurationHH(Duration dur) {
     final int hours = dur.inHours;
@@ -36,10 +38,12 @@ class FastListPage extends StatelessWidget {
   }
 
   void deleteFastEntry(Fast fast) {
-    isar.writeTxn((isar) async {
-      if (fast.id != null) {
-        isar.fasts.delete(fast.id!);
-      }
+    setState(() {
+      widget.isar.writeTxnSync((isar) {
+        if (fast.id != null) {
+          isar.fasts.deleteSync(fast.id!);
+        }
+      });
     });
   }
 
@@ -60,7 +64,7 @@ class FastListPage extends StatelessWidget {
               children: <Widget>[
                 Text(formatDurationHHmm(duration)),
                 const Text(" / "),
-                Text(fast.targetHours.toString()),
+                Text(fast.targetHours.toString() + 'h'),
                 const Spacer(),
                 TextButton(
                   onPressed: () => deleteFastEntry(fast),
@@ -76,27 +80,30 @@ class FastListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Fast> fasts = isar.fasts
+    List<Fast> fasts = widget.isar.fasts
                            .where()
                            .sortByStart()
                            .findAllSync();
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text("Completed fasts", style: Theme.of(context).textTheme.headline4),
+          Container(
+            child: Text("Completed fasts", style: Theme.of(context).textTheme.headline4),
+            padding: const EdgeInsets.all(10.0),
+          ),
           Expanded(
             child: ListView.builder(
               itemCount: fasts.length,
               itemBuilder: (context, index) {
-                return getFastListEntry(context, fasts[index]);
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                  child: getFastListEntry(context, fasts[index]),
+                );
               },
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 }

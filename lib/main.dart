@@ -9,33 +9,29 @@ import './fastlist.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final dir = await getApplicationSupportDirectory();
-  int selectedTabIndex = 0;
   final isar = await Isar.open(
     schemas: [FastSchema],
     directory: dir.path,
   );
   runApp(
-    MyApp(
-      isar: isar,
-      selectedTabIndex: selectedTabIndex,
-      setSelectedTabIndex: (int tabIndex) {
-        selectedTabIndex = tabIndex;
-      },
-    ),
+    NullApp(isar: isar),
   );
 }
 
-class MyApp extends StatelessWidget {
+class NullApp extends StatefulWidget {
   final Isar isar;
-  final int selectedTabIndex;
-  final Function setSelectedTabIndex;
 
-  const MyApp({
+  NullApp({
     Key? key,
     required this.isar,
-    required this.selectedTabIndex,
-    required this.setSelectedTabIndex,
-  }) : super(key: key);
+  });
+
+  @override
+  NullAppState createState() => NullAppState();
+}
+
+class NullAppState extends State<NullApp> {
+  int selectedTabIndex = 0;
 
   // This widget is the root of your application.
   @override
@@ -46,9 +42,13 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.orange,
       ),
       home: MyHomePage(
-        isar: isar,
+        isar: widget.isar,
         selectedTabIndex: selectedTabIndex,
-        setSelectedTabIndex: setSelectedTabIndex
+        setSelectedTabIndex: (int index) {
+          setState(() {
+            selectedTabIndex = index;
+          });
+        }
       ),
     );
   }
@@ -65,10 +65,6 @@ class MyHomePage extends StatelessWidget {
     required this.selectedTabIndex,
     required this.setSelectedTabIndex
   }) : super(key: key);
-
-  void onTabTap(int index) {
-    setSelectedTabIndex(index);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,9 +92,11 @@ class MyHomePage extends StatelessWidget {
         ],
         currentIndex: selectedTabIndex,
         selectedItemColor: Colors.amber[800],
-        onTap: onTabTap,
+        onTap: (int index) {
+          setSelectedTabIndex(index);
+        },
       ),
-      body: pages.elementAt(selectedTabIndex),
+      body: SafeArea(child: pages.elementAt(selectedTabIndex)),
     );
   }
 }
